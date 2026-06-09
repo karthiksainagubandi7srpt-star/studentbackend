@@ -111,6 +111,21 @@ app.get('/api/view-users', async (req, res) => {
     }
 });
 
+app.get('/api/add-users', async (req, res) => {
+    try {
+        const { username, email, age, gender, contactNo, score10th, board, address } = req.body;
+        // Query execution statement retrieving account logs
+        const result = await pool.query(
+            'INSERT INTO users (username, email, age, gender, contactNo, score10th, board, address) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+        );
+        
+        // Dispatches structural rows back to the calling client frontend
+        return res.json({ success: true, users: result.rows });
+    } catch (err) {
+        console.error('Database fetch operation error:', err.message);
+        return res.status(500).json({ success: false, message: 'Failed to extract database logs.' });
+    }
+});
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
