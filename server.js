@@ -18,6 +18,10 @@ app.use(cors({
 app.use(express.json()); // Essential for reading req.body
 
 app.use(express.json()); 
+const USERS = [
+    { username: "admin", password: "password123", role: "admin" },
+    { username: "user", password: "password123", role: "user" }
+];
 
 // Send a simple message to the HTML page when it hits this endpoint
 app.get('/api/message', (req, res) => {
