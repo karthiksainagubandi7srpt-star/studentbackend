@@ -1,52 +1,99 @@
 const express = require('express');
 const cors = require('cors');
+const { Pool } = require('pg');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors({ origin: '*' }));
 app.use(express.json());
 
-// Dynamic in-memory list mimicking a database deployment
-let usersDatabase = [
-    { username: 'admin', password: 'admin123', role: 'admin' },
-    { username: 'user', password: 'user123', role: 'user' }
-];
-
-// 1. Authentication Endpoint
-app.post('/api/login', (req, res) => {
-    const { username, password } = req.body;
-    
-    // Scan our list for an exact matching credential pair
-    const foundUser = usersDatabase.find(u => u.username === username && u.password === password);
-
-    if (foundUser) {
-        return res.json({ success: true, role: foundUser.role, username: foundUser.username });
-    } else {
-        return res.status(401).json({ success: false, message: 'Invalid credentials provided.' });
+// 1. Configure the Database Connection Pool
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL, 
+    ssl: {
+        rejectUnauthorized: false // Required for secure Render database connections
     }
 });
 
-// 2. User Creation Endpoint (Admin Access Restricted)
-app.post('/api/create-user', (req, res) => {
+// 2. Initialize Database Tables automatically on startup
+async function initializeDatabase() {
+    const createTableQuery = `
+        CREATE TABLE IF NOT EXISTS users (
+            id SERIAL PRIMARY KEY,
+            username VARCHAR(50) UNIQUE NOT NULL,
+            password VARCHAR(255) NOT NULL,
+            role VARCHAR(20) DEFAULT 'user',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+    `;
+
+    const insertDefaultAdminQuery = `
+        INSERT INTO users (username, password, role)
+        VALUES ('admin', 'admin123', 'admin')
+        ON CONFLICT (username) DO NOTHING;
+    `;
+
+    try {
+        await pool.query(createTableQuery);
+        console.log('✅ "users" table checked/created successfully!');
+
+        await pool.query(insertDefaultAdminQuery);
+        console.log('✅ Default admin account verified.');
+    } catch (err) {
+        console.error('❌ Error during database initialization:', err.message);
+    }
+}
+
+// Run the initialization code immediately
+initializeDatabase();
+
+// 3. Login API Endpoint
+app.post('/api/login', async (req, res) => {
+    const { username, password } = req.body;
+
+    try {
+        const result = await pool.query(
+            'SELECT * FROM users WHERE username = $1 AND password = $2', 
+            [username, password]
+        );
+
+        if (result.rows.length > 0) {
+            const foundUser = result.rows[0];
+            return res.json({ success: true, role: foundUser.role, username: foundUser.username });
+        } else {
+            return res.status(401).json({ success: false, message: 'Invalid credentials provided.' });
+        }
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ success: false, message: 'Database lookup error.' });
+    }
+});
+
+// 4. User Creation API Endpoint
+app.post('/api/create-user', async (req, res) => {
     const { newUsername, newPassword, newRole, adminUsername } = req.body;
 
-    // Direct structural safety check: ensure the request genuinely originated from an admin profile
-    const verifyingAdmin = usersDatabase.find(u => u.username === adminUsername && u.role === 'admin');
-    if (!verifyingAdmin) {
-        return res.status(403).json({ success: false, message: 'Unauthorized access denial.' });
+    try {
+        const adminCheck = await pool.query('SELECT role FROM users WHERE username = $1', [adminUsername]);
+        if (adminCheck.rows.length === 0 || adminCheck.rows[0].role !== 'admin') {
+            return res.status(403).json({ success: false, message: 'Unauthorized access denial.' });
+        }
+
+        await pool.query(
+            'INSERT INTO users (username, password, role) VALUES ($1, $2, $3)',
+            [newUsername, newPassword, newRole]
+        );
+
+        return res.json({ success: true, message: `Account created successfully for ${newUsername}!` });
+
+    } catch (err) {
+        if (err.code === '23505') { 
+            return res.status(400).json({ success: false, message: 'Username is already taken.' });
+        }
+        console.error(err);
+        return res.status(500).json({ success: false, message: 'Server processing database error.' });
     }
-
-    // Uniqueness validation check: block duplicates
-    const userExists = usersDatabase.some(u => u.username === newUsername);
-    if (userExists) {
-        return res.status(400).json({ success: false, message: 'Username is already taken.' });
-    }
-
-    // Append the newly formed record directly to our array container
-    usersDatabase.push({ username: newUsername, password: newPassword, role: newRole });
-    console.log(`Database updated! Total account registers: ${usersDatabase.length}`);
-
-    return res.json({ success: true, message: `Account created successfully for ${newUsername}!` });
 });
 
 app.listen(PORT, () => {
