@@ -1,30 +1,27 @@
 const express = require('express');
 const cors = require('cors');
 const app = express();
+const PORT = process.env.PORT || 3000;
 
-// Allow requests from your frontend and parse JSON bodies
-const express = require('express');
-const cors = require('cors'); // Add this line
-const app = express();
-
+// Enable CORS so your GitHub Pages frontend can talk to your Render backend
 app.use(cors({
-    origin: function (origin, callback) {
-        if (!origin) return callback(null, true);
-        return callback(null, origin); 
-    },
-    credentials: true 
+    origin: '*' // In production, replace with your actual GitHub Pages URL
 }));
+app.use(express.json());
 
-app.use(express.json()); // Essential for reading req.body
+// Mock database check (Replace this with real database queries later)
+app.post('/api/login', (req, res) => {
+    const { username, password } = req.body;
 
-app.use(express.json()); 
-
-// Send a simple message to the HTML page when it hits this endpoint
-app.get('/api/message', (req, res) => {
-  res.json({ text: "Hello from the separate Server Repository!" });
+    if (username === 'admin' && password === 'admin123') {
+        return res.json({ success: true, role: 'admin' });
+    } else if (username === 'user' && password === 'user123') {
+        return res.json({ success: true, role: 'user' });
+    } else {
+        return res.status(401).json({ success: false, message: 'Invalid credentials' });
+    }
 });
-// 3. Your processing endpoint
-const PORT = process.env.PORT || 10000;
+
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+    console.log(`Server running on port ${PORT}`);
 });
