@@ -18,23 +18,12 @@ app.use(cors({
 app.use(express.json()); // Essential for reading req.body
 
 app.use(express.json()); 
-const USERS = [
-    { username: "admin", password: "password123", role: "admin" },
-    { username: "user", password: "password123", role: "user" }
-];
 
 // Send a simple message to the HTML page when it hits this endpoint
 app.get('/api/message', (req, res) => {
   res.json({ text: "Hello from the separate Server Repository!" });
 });
 // 3. Your processing endpoint
-app.post('/login', (req, res) => {
-    const { username, password } = req.body;
-    console.log("Received login attempt for:", username);
-    
-    // Send back valid JSON data that matches what your frontend expects
-    res.json({ success: true, message: "you came to post(/login)" });
-});
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
