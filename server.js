@@ -95,6 +95,22 @@ app.post('/api/create-user', async (req, res) => {
         return res.status(500).json({ success: false, message: 'Server processing database error.' });
     }
 });
+// 5. Fetch All Database Rows Endpoint
+app.get('/api/view-users', async (req, res) => {
+    try {
+        // Query execution statement retrieving account logs
+        const result = await pool.query(
+            'SELECT id, username, role, created_at FROM users ORDER BY id ASC'
+        );
+        
+        // Dispatches structural rows back to the calling client frontend
+        return res.json({ success: true, users: result.rows });
+    } catch (err) {
+        console.error('Database fetch operation error:', err.message);
+        return res.status(500).json({ success: false, message: 'Failed to extract database logs.' });
+    }
+});
+
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
