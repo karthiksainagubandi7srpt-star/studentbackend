@@ -111,19 +111,23 @@ app.get('/api/view-users', async (req, res) => {
     }
 });
 
-app.get('/api/add-users', async (req, res) => {
+//  FIX 1: Changed app.get to app.post to match your frontend fetch
+app.post('/api/add-user', async (req, res) => {
     const { username, email, age, gender, contactNo, score10th, board, address } = req.body;
+    
     try {
-        
-        // Query execution statement retrieving account logs
+        //  FIX 2: Changed '?' placeholders to '$1, $2...' for PostgreSQL
         const result = await pool.query(
-            'INSERT INTO users (username, email, age, gender, contactNo, score10th, board, address) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',[username, email, age, gender, contactNo, score10th, board, address]);
+            `INSERT INTO users (username, email, age, gender, "contactNo", "score10th", board, address) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+            [username, email, age, gender, contactNo, score10th, board, address]
+        );
         
-        // Dispatches structural rows back to the calling client frontend
-        return res.json({ success: true, users: result.rows });
+        // Return a clear success message to match your frontend logic
+        return res.json({ success: true, message: 'User added successfully!' });
     } catch (err) {
-        console.error('Database fetch operation error:', err.message);
-        return res.status(500).json({ success: false, message: 'Failed to extract database logs.' });
+        console.error('Database insertion error:', err.message);
+        return res.status(500).json({ success: false, message: 'Server database error.' });
     }
 });
 
