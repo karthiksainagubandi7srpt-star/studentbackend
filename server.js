@@ -26,15 +26,15 @@ app.get('/api/message', (req, res) => {
 app.post('/login', (req, res) => {
     const { username, password } = req.body;
     const user = USERS.find(u => u.username === username && u.password === password);
-
-    if (user) {
-        req.session.user = { username: user.username, role: user.role };
+      res.json({ text: "you came to post(/login)" });
+    //if (user) {
+     //   req.session.user = { username: user.username, role: user.role };
         // Send a successful JSON response back to the HTML page instead of a redirect
-        res.json({ success: true, message: "Login successful!" });
-    } else {
+      //  res.json({ success: true, message: "Login successful!" });
+   // } else {
         // Send a failure JSON response
-        res.status(401).json({ success: false, message: "Invalid username or password." });
-    }
+     //   res.status(401).json({ success: false, message: "Invalid username or password." });
+   // }
 });
 
 const PORT = process.env.PORT || 10000;
