@@ -2,8 +2,9 @@ const express = require('express');
 const cors = require('cors');
 const app = express();
 
-// Enable CORS so your separate frontend repository can fetch data from here
-app.use(cors()); 
+// Allow requests from your frontend and parse JSON bodies
+app.use(cors());
+app.use(express.json()); 
 
 // Send a simple message to the HTML page when it hits this endpoint
 app.get('/api/message', (req, res) => {
