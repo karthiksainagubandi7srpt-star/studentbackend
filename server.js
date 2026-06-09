@@ -46,7 +46,7 @@ async function initializeDatabase() {
 }
 
 // Run the initialization code immediately
-initializeDatabase();
+//initializeDatabase();
 
 // 3. Login API Endpoint
 app.post('/api/login', async (req, res) => {
