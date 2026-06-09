@@ -112,12 +112,12 @@ app.get('/api/view-users', async (req, res) => {
 });
 
 app.get('/api/add-users', async (req, res) => {
+    const { username, email, age, gender, contactNo, score10th, board, address } = req.body;
     try {
-        const { username, email, age, gender, contactNo, score10th, board, address } = req.body;
+        
         // Query execution statement retrieving account logs
         const result = await pool.query(
-            'INSERT INTO users (username, email, age, gender, contactNo, score10th, board, address) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-        );
+            'INSERT INTO users (username, email, age, gender, contactNo, score10th, board, address) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',[username, email, age, gender, contactNo, score10th, board, address]);
         
         // Dispatches structural rows back to the calling client frontend
         return res.json({ success: true, users: result.rows });
