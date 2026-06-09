@@ -118,9 +118,9 @@ app.post('/api/add-user', async (req, res) => {
     try {
         //  FIX 2: Changed '?' placeholders to '$1, $2...' for PostgreSQL
         const result = await pool.query(
-            `INSERT INTO users (username, email, age, gender, "contactNo", "score10th", board, address) 
+            `INSERT INTO users (username, email, age, gender, "contactno", "score10th", board, address) 
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-            [username, email, age, gender, contactNo, score10th, board, address]
+            [username, email, age, gender, contactno, score10th, board, address]
         );
         
         // Return a clear success message to match your frontend logic
