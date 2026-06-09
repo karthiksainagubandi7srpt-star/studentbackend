@@ -3,7 +3,20 @@ const cors = require('cors');
 const app = express();
 
 // Allow requests from your frontend and parse JSON bodies
-app.use(cors());
+const express = require('express');
+const cors = require('cors'); // Add this line
+const app = express();
+
+app.use(cors({
+    origin: function (origin, callback) {
+        if (!origin) return callback(null, true);
+        return callback(null, origin); 
+    },
+    credentials: true 
+}));
+
+app.use(express.json()); // Essential for reading req.body
+
 app.use(express.json()); 
 
 // Send a simple message to the HTML page when it hits this endpoint
