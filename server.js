@@ -113,7 +113,7 @@ app.get('/api/view-users', async (req, res) => {
 
 //  FIX 1: Changed app.get to app.post to match your frontend fetch
 app.post('/api/add-user', async (req, res) => {
-    const { username, email, age, gender, contactNo, score10th, board, address } = req.body;
+    const { username, email, age, gender, contactno, score10th, board, address } = req.body;
     
     try {
         //  FIX 2: Changed '?' placeholders to '$1, $2...' for PostgreSQL
