@@ -146,24 +146,42 @@ app.get('/api/fetch-student/:id', async (req, res) => {
     }
 });
 //  add student marks
-    app.put('/api/update-marks/:id', async (req, res) => {
-    const studentid = req.params.id;
-    
-    // FIXED: Added curly braces to destructure 'marks' out of req.body object wrapper
-    const { marks } = req.body; 
+   app.put('/api/update-marks/:id', async (req, res) => {
+    // 1. Explicitly parse the student ID into a clean integer number base
+    const studentid = parseInt(req.params.id, 10);
+    const { username, marks } = req.body; 
 
     // Quick validation to ensure marks are provided
     if (marks === undefined || marks === null) {
         return res.status(400).json({ success: false, message: 'Marks value is required.' });
     }
     
+    // Explicitly parse marks to an integer to protect PostgreSQL data constraints
+    const numericMarks = parseInt(marks, 10);
+    if (isNaN(numericMarks) || isNaN(studentid)) {
+        return res.status(400).json({ success: false, message: 'Invalid ID or Marks format received.' });
+    }
+    
     try {
-        const result = await pool.query(
-            `UPDATE marks 
-             SET marks = $1
-             WHERE id = $2`,
-            [marks, studentid]
-        );
+        let result;
+        
+        if (username) {
+            // FIX FOR CULPRIT 1: If your schema demands a username presence, update BOTH columns
+            result = await pool.query(
+                `UPDATE marks 
+                 SET marks = $1, username = $2
+                 WHERE id = $3`,
+                [numericMarks, username, studentid]
+            );
+        } else {
+            // Standard marks isolated update fallback
+            result = await pool.query(
+                `UPDATE marks 
+                 SET marks = $1 
+                 WHERE id = $2`,
+                [numericMarks, studentid]
+            );
+        }
         
         if (result.rowCount === 0) {
             return res.status(404).json({ success: false, message: 'Student record not found.' });
@@ -171,8 +189,14 @@ app.get('/api/fetch-student/:id', async (req, res) => {
         
         return res.json({ success: true, message: 'Marks updated successfully!' });
     } catch (err) {
-        console.error('Database update error:', err.message);
-        return res.status(500).json({ success: false, message: 'Server database error.' });
+        // CRITICAL DEBUG LOGGING: Look at your Render terminal log to see the real Postgres message
+        console.error('DATABASE CRASH REASON:', err.stack || err.message);
+        
+        // This will send the real Postgres error straight back to your frontend screen so you can read it
+        return res.status(500).json({ 
+            success: false, 
+            message: 'Server database error details: ' + err.message 
+        });
     }
 });
 
