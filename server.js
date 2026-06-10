@@ -83,46 +83,36 @@ app.get('/api/view-users', async (req, res) => {
 
 // FIXED: Changed ${id} to :id which is Express route parameter syntax
 app.get('/api/fetch-student/:id', async (req, res) => {
-    try {
-        const studentId = req.params.id;
+    const studentId = req.params.id;
 
-        // FIXED: Added id and marks to SELECT, and a parameterized WHERE clause
-        const result = await pool.query(
-            'SELECT id, username, marks FROM marks WHERE id = $1',
+    try {
+        // Query joins users and marks tables together
+        let result = await pool.query(
+            `SELECT u.id, u.username, m.marks 
+             FROM users u 
+             LEFT JOIN marks m ON u.id = m.id 
+             WHERE u.id = $1`,
             [studentId]
         );
-        
-        // If no student matches that ID
+
         if (result.rows.length === 0) {
-            return res.status(404).json({ success: false, message: 'Student not found.' });
+            return res.status(404).json({ success: false, message: 'Student ID does not exist.' });
         }
 
-        // FIXED: Return the individual user object directly to match your frontend expectation
-        return res.json(result.rows[0]);
+        let studentData = result.rows[0];
 
+        // Safe Fallback: If student exists in users but has no row in the marks table yet
+        if (studentData.marks === null) {
+            await pool.query('INSERT INTO marks (id, marks) VALUES ($1, $2) ON CONFLICT (id) DO NOTHING', [studentId, 0]);
+            studentData.marks = 0;
+        }
+
+        return res.json({ success: true, student: studentData });
     } catch (err) {
-        console.error('Database fetch operation error:', err.message);
-        return res.status(500).json({ success: false, message: 'Failed to extract database logs.' });
+        console.error('Fetch student endpoint error:', err.message);
+        return res.status(500).json({ success: false, message: 'Server database error lookup.' });
     }
 });
-
-
-
-app.get('/api/view-marks', async (req, res) => {
-    try {
-        // Query execution statement retrieving account logs
-        const result = await pool.query(
-            'SELECT id, username, marks, RANK() OVER (ORDER BY marks DESC) AS calculated_rank FROM marks'
-        );
-        
-        // Dispatches structural rows back to the calling client frontend
-        return res.json({ success: true, users: result.rows });
-    } catch (err) {
-        console.error('Database fetch operation error:', err.message);
-        return res.status(500).json({ success: false, message: 'Failed to extract database logs.' });
-    }
-});
-
 //  add students
     app.post('/api/add-user', async (req, res) => {
     const { username, email, age, gender, contactno, score10th, board, address } = req.body;
