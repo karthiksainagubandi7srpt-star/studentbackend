@@ -80,6 +80,21 @@ app.get('/api/view-users', async (req, res) => {
     }
 });
 
+app.get('/api/view-marks', async (req, res) => {
+    try {
+        // Query execution statement retrieving account logs
+        const result = await pool.query(
+            'SELECT * FROM users ORDER BY id ASC'
+        );
+        
+        // Dispatches structural rows back to the calling client frontend
+        return res.json({ success: true, users: result.rows });
+    } catch (err) {
+        console.error('Database fetch operation error:', err.message);
+        return res.status(500).json({ success: false, message: 'Failed to extract database logs.' });
+    }
+});
+
 //  add students
     app.post('/api/add-user', async (req, res) => {
     const { username, email, age, gender, contactno, score10th, board, address } = req.body;
