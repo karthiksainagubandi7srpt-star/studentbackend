@@ -143,21 +143,37 @@ app.get('/api/view-marks', async (req, res) => {
     }
 });
 //  add student marks
-    app.put('/api/insert-marks/:id', async (req, res) => {
-    const studentId = req.params.id;
+    // Changed endpoint name to 'update-marks' to reflect its purpose accurately
+app.put('/api/update-marks/:id', async (req, res) => {
+    const studentid = req.params.id;
+    
+    // FIXED: Safely pull the specific 'marks' variable out of the body object
+    const { marks } = req.body; 
+
+    // Quick validation to ensure marks are provided
+    if (marks === undefined || marks === null) {
+        return res.status(404).json({ success: false, message: 'Marks value is required.' });
+    }
     
     try {
-        //  FIX 2: Changed '?' placeholders to '$1, $2...' for PostgreSQL
+        // FIXED: Changed INSERT to UPDATE, and aligned table name to 'marks'
         const result = await pool.query(
-            `INSERT INTO users (username, email, age, gender, "contactno", "score10th", board, address) 
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-            [username, email, age, gender, contactno, score10th, board, address]
+            `UPDATE marks 
+             SET marks = $1 
+             WHERE id = $2 
+             RETURNING *`,
+            [marks, studentid]
         );
         
-        // Return a clear success message to match your frontend logic
-        return res.json({ success: true, message: 'User added successfully!' });
+        // If the query executed but affected 0 rows (ID doesn't exist)
+        if (result.rows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Student record not found.' });
+        }
+        
+        // FIXED: Return a clear success message indicating an update took place
+        return res.json({ success: true, message: 'Marks updated successfully!' });
     } catch (err) {
-        console.error('Database insertion error:', err.message);
+        console.error('Database update error:', err.message);
         return res.status(500).json({ success: false, message: 'Server database error.' });
     }
 });
