@@ -146,10 +146,11 @@ app.get('/api/fetch-student/:id', async (req, res) => {
     }
 });
 //  add student marks
-    // Changed endpoint name to 'update-marks' to reflect its purpose accurately
-app.put('/api/update-marks/:id', async (req, res) => {
+    app.put('/api/update-marks/:id', async (req, res) => {
     const studentid = req.params.id;
-    const marks  = req.body; 
+    
+    // FIXED: Added curly braces to destructure 'marks' out of req.body object wrapper
+    const { marks } = req.body; 
 
     // Quick validation to ensure marks are provided
     if (marks === undefined || marks === null) {
@@ -164,7 +165,6 @@ app.put('/api/update-marks/:id', async (req, res) => {
             [marks, studentid]
         );
         
-        // FIXED: Changed 'result.rows.length' to 'result.rowCount' for tracking UPDATE commands
         if (result.rowCount === 0) {
             return res.status(404).json({ success: false, message: 'Student record not found.' });
         }
