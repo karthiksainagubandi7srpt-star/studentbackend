@@ -146,30 +146,26 @@ app.get('/api/view-marks', async (req, res) => {
     // Changed endpoint name to 'update-marks' to reflect its purpose accurately
 app.put('/api/update-marks/:id', async (req, res) => {
     const studentid = req.params.id;
-    
-    // FIXED: Safely pull the specific 'marks' variable out of the body object
     const { marks } = req.body; 
 
     // Quick validation to ensure marks are provided
     if (marks === undefined || marks === null) {
-        return res.status(404).json({ success: false, message: 'Marks value is required.' });
+        return res.status(400).json({ success: false, message: 'Marks value is required.' });
     }
     
     try {
-        // FIXED: Changed INSERT to UPDATE, and aligned table name to 'marks'
         const result = await pool.query(
             `UPDATE marks 
              SET marks = $1 
-             WHERE id = $2 `,
+             WHERE id = $2`,
             [marks, studentid]
         );
         
-        // If the query executed but affected 0 rows (ID doesn't exist)
-        if (result.rows.length === 0) {
+        // FIXED: Changed 'result.rows.length' to 'result.rowCount' for tracking UPDATE commands
+        if (result.rowCount === 0) {
             return res.status(404).json({ success: false, message: 'Student record not found.' });
         }
         
-        // FIXED: Return a clear success message indicating an update took place
         return res.json({ success: true, message: 'Marks updated successfully!' });
     } catch (err) {
         console.error('Database update error:', err.message);
