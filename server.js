@@ -142,6 +142,25 @@ app.get('/api/view-marks', async (req, res) => {
         return res.status(500).json({ success: false, message: 'Server database error.' });
     }
 });
+//  add student marks
+    app.put('/api/insert-marks/:id', async (req, res) => {
+    const studentId = req.params.id;
+    
+    try {
+        //  FIX 2: Changed '?' placeholders to '$1, $2...' for PostgreSQL
+        const result = await pool.query(
+            `INSERT INTO users (username, email, age, gender, "contactno", "score10th", board, address) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+            [username, email, age, gender, contactno, score10th, board, address]
+        );
+        
+        // Return a clear success message to match your frontend logic
+        return res.json({ success: true, message: 'User added successfully!' });
+    } catch (err) {
+        console.error('Database insertion error:', err.message);
+        return res.status(500).json({ success: false, message: 'Server database error.' });
+    }
+});
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
