@@ -84,11 +84,7 @@ app.get('/api/view-users', async (req, res) => {
        app.get('/api/view-marks', async (req, res) => {
     try {
         // FIXED: Added JOIN to get usernames, and added RANK() function for the leaderboard
-        const queryText = `
-            SELECT id,username,marks, 
-                RANK() OVER (ORDER BY marks DESC))::INT AS calculated_rank 
-            FROM marks
-        `;
+        const queryText = `SELECT id, username, marks, RANK() OVER (ORDER BY marks DESC) AS calculated_rank FROM marks`;
         
         const result = await pool.query(queryText);
         
