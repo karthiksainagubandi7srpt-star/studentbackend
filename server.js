@@ -149,7 +149,7 @@ app.get('/api/fetch-student/:id', async (req, res) => {
     // Changed endpoint name to 'update-marks' to reflect its purpose accurately
 app.put('/api/update-marks/:id', async (req, res) => {
     const studentid = req.params.id;
-    const { marks } = req.body; 
+    const marks  = req.body; 
 
     // Quick validation to ensure marks are provided
     if (marks === undefined || marks === null) {
