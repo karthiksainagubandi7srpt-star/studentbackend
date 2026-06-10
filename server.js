@@ -81,20 +81,31 @@ app.get('/api/view-users', async (req, res) => {
 });
 
 
-app.get('/api/fetch-student/${id}', async (req, res) => {
+// FIXED: Changed ${id} to :id which is Express route parameter syntax
+app.get('/api/fetch-student/:id', async (req, res) => {
     try {
-        // Query execution statement retrieving account logs
+        const studentId = req.params.id;
+
+        // FIXED: Added id and marks to SELECT, and a parameterized WHERE clause
         const result = await pool.query(
-            'SELECT username FROM marks'
+            'SELECT id, username, marks FROM marks WHERE id = $1',
+            [studentId]
         );
         
-        // Dispatches structural rows back to the calling client frontend
-        return res.json({ success: true, users: result.rows });
+        // If no student matches that ID
+        if (result.rows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Student not found.' });
+        }
+
+        // FIXED: Return the individual user object directly to match your frontend expectation
+        return res.json(result.rows[0]);
+
     } catch (err) {
         console.error('Database fetch operation error:', err.message);
         return res.status(500).json({ success: false, message: 'Failed to extract database logs.' });
     }
 });
+
 
 
 app.get('/api/view-marks', async (req, res) => {
