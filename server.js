@@ -69,7 +69,7 @@ app.get('/api/view-users', async (req, res) => {
     try {
         // Query execution statement retrieving account logs
         const result = await pool.query(
-            'SELECT id, username, role, created_at FROM users ORDER BY id ASC'
+            'SELECT * FROM users ORDER BY id ASC'
         );
         
         // Dispatches structural rows back to the calling client frontend
