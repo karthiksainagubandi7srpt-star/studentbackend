@@ -64,31 +64,25 @@ app.post('/api/create-user', async (req, res) => {
         return res.status(500).json({ success: false, message: 'Server processing database error.' });
     }
 });
+
 // 5. Fetch All student data
 app.get('/api/view-users', async (req, res) => {
     try {
-        // Query execution statement retrieving account logs
         const result = await pool.query(
             'SELECT * FROM users ORDER BY id ASC'
         );
-        
-        // Dispatches structural rows back to the calling client frontend
         return res.json({ success: true, users: result.rows });
     } catch (err) {
         console.error('Database fetch operation error:', err.message);
         return res.status(500).json({ success: false, message: 'Failed to extract database logs.' });
     }
 });
-// 5. Fetch All student marks
 
-       app.get('/api/view-marks', async (req, res) => {
+// 6. Fetch All student marks
+app.get('/api/view-marks', async (req, res) => {
     try {
-        // FIXED: Added JOIN to get usernames, and added RANK() function for the leaderboard
         const queryText = `SELECT id, username, marks, RANK() OVER (ORDER BY marks DESC) AS calculated_rank FROM marks`;
-        
         const result = await pool.query(queryText);
-        
-        // Dispatches structural rows back to the calling client frontend
         return res.json({ success: true, users: result.rows });
     } catch (err) {
         console.error('Database fetch operation error:', err.message);
@@ -96,15 +90,13 @@ app.get('/api/view-users', async (req, res) => {
     }
 });
 
-// FIXED: Changed ${id} to :id which is Express route parameter syntax
+// 7. Fetch single student profile details
 app.get('/api/fetch-student/:id', async (req, res) => {
     const studentId = req.params.id;
 
     try {
-        // Query joins users and marks tables together
         let result = await pool.query(
-            `SELECT username FROM users  
-             WHERE id = $1`,
+            `SELECT id, username FROM users WHERE id = $1`,
             [studentId]
         );
 
@@ -114,11 +106,9 @@ app.get('/api/fetch-student/:id', async (req, res) => {
 
         let studentData = result.rows[0];
 
-        // Safe Fallback: If student exists in users but has no row in the marks table yet
-        if (studentData.marks === null) {
-            await pool.query('INSERT INTO marks (id, marks) VALUES ($1, $2) ON CONFLICT (id) DO NOTHING', [studentId, 0]);
-            studentData.marks = 0;
-        }
+        // Fetch existing marks to populate the form field accurately
+        let marksResult = await pool.query(`SELECT marks FROM marks WHERE id = $1`, [studentId]);
+        studentData.marks = marksResult.rows.length > 0 ? marksResult.rows[0].marks : 0;
 
         return res.json({ success: true, student: studentData });
     } catch (err) {
@@ -126,28 +116,26 @@ app.get('/api/fetch-student/:id', async (req, res) => {
         return res.status(500).json({ success: false, message: 'Server database error lookup.' });
     }
 });
-//  add students
-    app.post('/api/add-user', async (req, res) => {
+
+// 8. Add students profiles
+app.post('/api/add-user', async (req, res) => {
     const { username, email, age, gender, contactno, score10th, board, address } = req.body;
     
     try {
-        //  FIX 2: Changed '?' placeholders to '$1, $2...' for PostgreSQL
         const result = await pool.query(
-            `INSERT INTO users (username, email, age, gender, "contactno", "score10th", board, address) 
+            `INSERT INTO users (username, email, age, gender, contactno, score10th, board, address) 
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
             [username, email, age, gender, contactno, score10th, board, address]
         );
-        
-        // Return a clear success message to match your frontend logic
         return res.json({ success: true, message: 'User added successfully!' });
     } catch (err) {
         console.error('Database insertion error:', err.message);
         return res.status(500).json({ success: false, message: 'Server database error.' });
     }
 });
-//  add student marks
-   app.put('/api/update-marks/:id', async (req, res) => {
-    // Trim spaces and parse using base 10
+
+// 9. Update student marks endpoint (FIXED: Rebuilt the missing execution blocks safely)
+app.put('/api/update-marks/:id', async (req, res) => {
     const studentid = parseInt(req.params.id.toString().trim(), 10);
     const { username, marks } = req.body; 
 
@@ -155,10 +143,8 @@ app.get('/api/fetch-student/:id', async (req, res) => {
         return res.status(400).json({ success: false, message: 'Marks value is required.' });
     }
     
-    // Parse using Math.round to handle accidental decimal values cleanly
     const numericMarks = Math.round(Number(marks));
     
-    // Validate formatting checks
     if (isNaN(numericMarks) || isNaN(studentid)) {
         return res.status(400).json({ 
             success: false, 
@@ -166,7 +152,24 @@ app.get('/api/fetch-student/:id', async (req, res) => {
         });
     }
 
-    // ... your remaining try/catch block for pool.query remains the same ...
+    try {
+        const result = await pool.query(
+            `UPDATE marks 
+             SET marks = $1, username = $2
+             WHERE id = $3`,
+            [numericMarks, username || '', studentid]
+        );
+        
+        if (result.rowCount === 0) {
+            return res.status(404).json({ success: false, message: 'Student record not found.' });
+        }
+        
+        return res.json({ success: true, message: 'Marks updated successfully!' });
+    } catch (err) {
+        console.error('Database update error:', err.message);
+        return res.status(500).json({ success: false, message: 'Server database error.' });
+    }
+});
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
