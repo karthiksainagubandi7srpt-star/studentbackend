@@ -160,8 +160,7 @@ app.put('/api/update-marks/:id', async (req, res) => {
         const result = await pool.query(
             `UPDATE marks 
              SET marks = $1 
-             WHERE id = $2 
-             RETURNING *`,
+             WHERE id = $2 `,
             [marks, studentid]
         );
         
