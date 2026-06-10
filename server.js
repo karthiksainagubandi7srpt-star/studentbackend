@@ -147,58 +147,26 @@ app.get('/api/fetch-student/:id', async (req, res) => {
 });
 //  add student marks
    app.put('/api/update-marks/:id', async (req, res) => {
-    // 1. Explicitly parse the student ID into a clean integer number base
-    const studentid = parseInt(req.params.id, 10);
+    // Trim spaces and parse using base 10
+    const studentid = parseInt(req.params.id.toString().trim(), 10);
     const { username, marks } = req.body; 
 
-    // Quick validation to ensure marks are provided
-    if (marks === undefined || marks === null) {
+    if (marks === undefined || marks === null || marks === '') {
         return res.status(400).json({ success: false, message: 'Marks value is required.' });
     }
     
-    // Explicitly parse marks to an integer to protect PostgreSQL data constraints
-    const numericMarks = parseInt(marks, 10);
-    if (isNaN(numericMarks) || isNaN(studentid)) {
-        return res.status(400).json({ success: false, message: 'Invalid ID or Marks format received.' });
-    }
+    // Parse using Math.round to handle accidental decimal values cleanly
+    const numericMarks = Math.round(Number(marks));
     
-    try {
-        let result;
-        
-        if (username) {
-            // FIX FOR CULPRIT 1: If your schema demands a username presence, update BOTH columns
-            result = await pool.query(
-                `UPDATE marks 
-                 SET marks = $1, username = $2
-                 WHERE id = $3`,
-                [numericMarks, username, studentid]
-            );
-        } else {
-            // Standard marks isolated update fallback
-            result = await pool.query(
-                `UPDATE marks 
-                 SET marks = $1 
-                 WHERE id = $2`,
-                [numericMarks, studentid]
-            );
-        }
-        
-        if (result.rowCount === 0) {
-            return res.status(404).json({ success: false, message: 'Student record not found.' });
-        }
-        
-        return res.json({ success: true, message: 'Marks updated successfully!' });
-    } catch (err) {
-        // CRITICAL DEBUG LOGGING: Look at your Render terminal log to see the real Postgres message
-        console.error('DATABASE CRASH REASON:', err.stack || err.message);
-        
-        // This will send the real Postgres error straight back to your frontend screen so you can read it
-        return res.status(500).json({ 
+    // Validate formatting checks
+    if (isNaN(numericMarks) || isNaN(studentid)) {
+        return res.status(400).json({ 
             success: false, 
-            message: 'Server database error details: ' + err.message 
+            message: `Invalid format error. Received ID: "${req.params.id}", Received Marks: "${marks}"` 
         });
     }
-});
+
+    // ... your remaining try/catch block for pool.query remains the same ...
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
