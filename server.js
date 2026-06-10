@@ -64,7 +64,7 @@ app.post('/api/create-user', async (req, res) => {
         return res.status(500).json({ success: false, message: 'Server processing database error.' });
     }
 });
-// 5. Fetch All Database Rows Endpoint
+// 5. Fetch All student data
 app.get('/api/view-users', async (req, res) => {
     try {
         // Query execution statement retrieving account logs
@@ -80,8 +80,8 @@ app.get('/api/view-users', async (req, res) => {
     }
 });
 
-//  FIX 1: Changed app.get to app.post to match your frontend fetch
-app.post('/api/add-user', async (req, res) => {
+//  add students
+    app.post('/api/add-user', async (req, res) => {
     const { username, email, age, gender, contactno, score10th, board, address } = req.body;
     
     try {
