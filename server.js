@@ -80,12 +80,21 @@ app.get('/api/view-users', async (req, res) => {
     }
 });
 // 5. Fetch All student marks
-app.get('/api/view-markss', async (req, res) => {
+// FIXED: Changed 'view-markss' to 'view-marks' to match your frontend fetch call
+app.get('/api/view-marks', async (req, res) => {
     try {
-        // Query execution statement retrieving account logs
-        const result = await pool.query(
-            'SELECT * FROM marks'
-        );
+        // FIXED: Added JOIN to get usernames, and added RANK() function for the leaderboard
+        const queryText = `
+            SELECT 
+                u.id, 
+                u.username, 
+                m.marks, 
+                (RANK() OVER (ORDER BY m.marks DESC))::INT AS calculated_rank 
+            FROM marks m
+            JOIN users u ON m.id = u.id
+        `;
+        
+        const result = await pool.query(queryText);
         
         // Dispatches structural rows back to the calling client frontend
         return res.json({ success: true, users: result.rows });
@@ -94,7 +103,6 @@ app.get('/api/view-markss', async (req, res) => {
         return res.status(500).json({ success: false, message: 'Failed to extract database logs.' });
     }
 });
-
 
 // FIXED: Changed ${id} to :id which is Express route parameter syntax
 app.get('/api/fetch-student/:id', async (req, res) => {
