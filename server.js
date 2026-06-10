@@ -149,7 +149,7 @@ app.get('/api/fetch-student/:id', async (req, res) => {
     // Changed endpoint name to 'update-marks' to reflect its purpose accurately
 app.put('/api/update-marks/:id', async (req, res) => {
     const studentid = req.params.id;
-    const { username,marks } = req.body; 
+    const { username, marks } = req.body; 
 
     // Quick validation to ensure marks are provided
     if (marks === undefined || marks === null) {
@@ -159,7 +159,7 @@ app.put('/api/update-marks/:id', async (req, res) => {
     try {
         const result = await pool.query(
             `UPDATE marks 
-             SET marks = $1 username=$2
+             SET marks = $1, username=$2
              WHERE id = $3`,
             [marks, username, studentid]
         );
