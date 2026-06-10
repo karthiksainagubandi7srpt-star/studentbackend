@@ -80,18 +80,14 @@ app.get('/api/view-users', async (req, res) => {
     }
 });
 // 5. Fetch All student marks
-// FIXED: Changed 'view-markss' to 'view-marks' to match your frontend fetch call
-app.get('/api/view-marks', async (req, res) => {
+
+       app.get('/api/view-marks', async (req, res) => {
     try {
         // FIXED: Added JOIN to get usernames, and added RANK() function for the leaderboard
         const queryText = `
-            SELECT 
-                u.id, 
-                u.username, 
-                m.marks, 
-                (RANK() OVER (ORDER BY m.marks DESC))::INT AS calculated_rank 
-            FROM marks m
-            JOIN users u ON m.id = u.id
+            SELECT id,username,marks, 
+                RANK() OVER (ORDER BY marks DESC))::INT AS calculated_rank 
+            FROM marks
         `;
         
         const result = await pool.query(queryText);
