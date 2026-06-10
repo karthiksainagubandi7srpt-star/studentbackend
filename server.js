@@ -79,6 +79,21 @@ app.get('/api/view-users', async (req, res) => {
         return res.status(500).json({ success: false, message: 'Failed to extract database logs.' });
     }
 });
+// 5. Fetch All student marks
+app.get('/api/view-markss', async (req, res) => {
+    try {
+        // Query execution statement retrieving account logs
+        const result = await pool.query(
+            'SELECT * FROM marks'
+        );
+        
+        // Dispatches structural rows back to the calling client frontend
+        return res.json({ success: true, users: result.rows });
+    } catch (err) {
+        console.error('Database fetch operation error:', err.message);
+        return res.status(500).json({ success: false, message: 'Failed to extract database logs.' });
+    }
+});
 
 
 // FIXED: Changed ${id} to :id which is Express route parameter syntax
