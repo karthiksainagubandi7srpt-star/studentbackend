@@ -84,7 +84,7 @@ app.get('/api/view-marks', async (req, res) => {
     try {
         // Query execution statement retrieving account logs
         const result = await pool.query(
-            'SELECT * FROM marks ORDER BY id ASC'
+            'SELECT id, marks, marks, RANK() OVER (ORDER BY studentmarks DESC) AS calculated_rank FROM marks'
         );
         
         // Dispatches structural rows back to the calling client frontend
