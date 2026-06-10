@@ -103,10 +103,8 @@ app.get('/api/fetch-student/:id', async (req, res) => {
     try {
         // Query joins users and marks tables together
         let result = await pool.query(
-            `SELECT u.id, u.username, m.marks 
-             FROM users u 
-             LEFT JOIN marks m ON u.id = m.id 
-             WHERE u.id = $1`,
+            `SELECT username FROM users  
+             WHERE id = $1`,
             [studentId]
         );
 
