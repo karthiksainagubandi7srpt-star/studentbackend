@@ -44,7 +44,7 @@ app.post('/api/create-user', async (req, res) => {
     const { newUsername, newPassword, newRole, adminUsername } = req.body;
 
     try {
-        const adminCheck = await pool.query('SELECT role FROM users WHERE username = $1', [adminUsername]);
+        const adminCheck = await pool.query('SELECT role FROM logindata WHERE username = $1', [adminUsername]);
         if (adminCheck.rows.length === 0 || adminCheck.rows[0].role !== 'admin') {
             return res.status(403).json({ success: false, message: 'Unauthorized access denial.' });
         }
