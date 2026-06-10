@@ -16,37 +16,6 @@ const pool = new Pool({
     }
 });
 
-// 2. Initialize Database Tables automatically on startup
-async function initializeDatabase() {
-    const createTableQuery = `
-        CREATE TABLE IF NOT EXISTS users (
-            id SERIAL PRIMARY KEY,
-            username VARCHAR(50) UNIQUE NOT NULL,
-            password VARCHAR(255) NOT NULL,
-            role VARCHAR(20) DEFAULT 'user',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-    `;
-
-    const insertDefaultAdminQuery = `
-        INSERT INTO users (username, password, role)
-        VALUES ('admin', 'admin123', 'admin')
-        ON CONFLICT (username) DO NOTHING;
-    `;
-
-    try {
-        await pool.query(createTableQuery);
-        console.log('✅ "users" table checked/created successfully!');
-
-        await pool.query(insertDefaultAdminQuery);
-        console.log('✅ Default admin account verified.');
-    } catch (err) {
-        console.error('❌ Error during database initialization:', err.message);
-    }
-}
-
-// Run the initialization code immediately
-//initializeDatabase();
 
 // 3. Login API Endpoint
 app.post('/api/login', async (req, res) => {
@@ -54,7 +23,7 @@ app.post('/api/login', async (req, res) => {
 
     try {
         const result = await pool.query(
-            'SELECT * FROM users WHERE username = $1 AND password = $2', 
+            'SELECT * FROM logindata WHERE username = $1 AND password = $2', 
             [username, password]
         );
 
