@@ -64,28 +64,68 @@ app.post('/api/login', async (req, res) => {
     }
 });
 // 4. User Creation API Endpoint
+
+// 🚀 SECURE ACCOUNT PROVISIONING ENDPOINT
 app.post('/api/create-user', async (req, res) => {
-    const { newUsername, newPassword, newRole, adminUsername } = req.body;
+    // 1. Extract the Authorization Bearer Token from HTTP Headers
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1]; // Splits 'Bearer <token>'
+
+    if (!token) {
+        return res.status(401).json({ success: false, message: 'Access Denied: Missing session token.' });
+    }
 
     try {
-        const adminCheck = await pool.query('SELECT role FROM logindata WHERE username = $1', [adminUsername]);
-        if (adminCheck.rows.length === 0 || adminCheck.rows[0].role !== 'admin') {
-            return res.status(403).json({ success: false, message: 'Unauthorized access denial.' });
+        // 2. Decode and cryptographically verify the token signature
+        const secretKey = process.env.JWT_SECRET || 'SRI_CHAITANYA_SUPER_SECRET_KEY_2026';
+        const decodedUser = jwt.verify(token, secretKey);
+
+        // 3. RBAC Check: Hard-verify the request source has an Admin role identity
+        if (decodedUser.role !== 'admin') {
+            return res.status(403).json({ success: false, message: 'Forbidden: Insufficient privileges.' });
         }
 
-        await pool.query(
-            'INSERT INTO users (username, password, role) VALUES ($1, $2, $3)',
-            [newUsername, newPassword, newRole]
+        // 4. Unpack payload strings transmitted by your create-user.html form
+        const { newUsername, newPassword, newRole } = req.body;
+
+        if (!newUsername || !newPassword || !newRole) {
+            return res.status(400).json({ success: false, message: 'Validation Error: Missing required fields.' });
+        }
+
+        // 5. Conflict Resolution: Check if the Username / Student ID already exists
+        const duplicateCheck = await pool.query(
+            'SELECT username FROM logindata WHERE username = $1',
+            [newUsername]
         );
 
-        return res.json({ success: true, message: `Account created successfully for ${newUsername}!` });
+        if (duplicateCheck.rows.length > 0) {
+            return res.status(409).json({ success: false, message: 'Account Registration Conflict: Username already taken.' });
+        }
+
+        // 6. DB Writing Block: Safely inject elements via prepared parametric constraints
+        // NOTE: If you decide to add password hashing later, hash 'newPassword' right before this step!
+        const insertQuery = `
+            INSERT INTO logindata (username, password, role) 
+            VALUES ($1, $2, $3) 
+            RETURNING id, username, role;
+        `;
+        
+        await pool.query(insertQuery, [newUsername, newPassword, newRole]);
+
+        // 7. Success Loop Return
+        return res.status(201).json({ 
+            success: true, 
+            message: `Account for ${newUsername} (${newRole.toUpperCase()}) successfully created!` 
+        });
 
     } catch (err) {
-        if (err.code === '23505') { 
-            return res.status(400).json({ success: false, message: 'Username is already taken.' });
+        // Catch expired or tampered token exceptions securely
+        if (err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError') {
+            return res.status(403).json({ success: false, message: 'Session expired or altered. Please log back in.' });
         }
-        console.error(err);
-        return res.status(500).json({ success: false, message: 'Server processing database error.' });
+        
+        console.error('System Account Provisioning Fault Log:', err);
+        return res.status(500).json({ success: false, message: 'Database runtime insertion error.' });
     }
 });
 
