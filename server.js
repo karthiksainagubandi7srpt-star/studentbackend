@@ -105,10 +105,10 @@ app.post('/api/create-user', async (req, res) => {
         // 6. DB Writing Block: Safely inject elements via prepared parametric constraints
         // NOTE: If you decide to add password hashing later, hash 'newPassword' right before this step!
         const insertQuery = `
+
             INSERT INTO logindata (username, password, role) 
             VALUES ($1, $2, $3) 
-            RETURNING id, username, role;
-        `;
+                `;
         
         await pool.query(insertQuery, [newUsername, newPassword, newRole]);
 
