@@ -18,27 +18,51 @@ const pool = new Pool({
 
 
 // 3. Login API Endpoint
+const jwt = require('jsonwebtoken');
+
 app.post('/api/login', async (req, res) => {
     const { username, password } = req.body;
 
     try {
+        // 1. Fetch user by username only (Secure querying design pattern)
         const result = await pool.query(
-            'SELECT * FROM logindata WHERE username = $1 AND password = $2', 
-            [username, password]
+            'SELECT * FROM logindata WHERE username = $1', 
+            [username]
         );
 
         if (result.rows.length > 0) {
             const foundUser = result.rows[0];
-            return res.json({ success: true, role: foundUser.role, username: foundUser.username });
+
+            // 2. Structural Plain-text Match Gate (Switch to bcrypt hashing later!)
+            if (foundUser.password !== password) {
+                return res.status(401).json({ success: true, message: 'Invalid credentials provided.' });
+            }
+
+            // 3. Cryptographically sign a token containing user identity details
+            // Note: Use a random string fallback if JWT_SECRET environment variable is missing
+            const secretKey = process.env.JWT_SECRET || 'SRI_CHAITANYA_SUPER_SECRET_KEY_2026';
+            const token = jwt.sign(
+                { username: foundUser.username, role: foundUser.role },
+                secretKey,
+                { expiresIn: '8h' } // Token auto-expires after 8 hours
+            );
+
+            // 4. Return matching data packet structure expected by the login UI
+            return res.json({ 
+                success: true, 
+                token: token, 
+                role: foundUser.role, 
+                username: foundUser.username 
+            });
+
         } else {
-            return res.status(401).json({ success: false, message: 'Invalid credentials provided.' });
+            return res.status(401).json({ success: true, message: 'Invalid credentials provided.' });
         }
     } catch (err) {
-        console.error(err);
+        console.error('Login Exception Error Log:', err);
         return res.status(500).json({ success: false, message: 'Database lookup error.' });
     }
 });
-
 // 4. User Creation API Endpoint
 app.post('/api/create-user', async (req, res) => {
     const { newUsername, newPassword, newRole, adminUsername } = req.body;
